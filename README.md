@@ -17,7 +17,6 @@ It is designed to be modular, with each script handling a specific stage of the 
   - [4. Remove Duplicate Links (Pre-download)](#4-remove-duplicate-links-pre-download)
   - [5. Download Media](#5-download-media)
   - [6. Organize Media](#6-organize-media)
-  - [7. Final Duplicate Cleanup](#7-final-duplicate-cleanup)
 - [Key Design Concepts](#-key-design-concepts)
   - [Deduplication Strategy](#deduplication-strategy)
   - [URL Extraction Coverage](#url-extraction-coverage)
@@ -38,8 +37,7 @@ It is designed to be modular, with each script handling a specific stage of the 
 3. Queue downloads in MyJDownloader
 4. Remove duplicate links before downloading
 5. Download media
-6. Organize media into structured folders
-7. Remove duplicate files by hash
+6. Organize media into structured folders and remove duplicate files by hash
 
 ---
 
