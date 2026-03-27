@@ -152,6 +152,10 @@ def extract_urls(soup, url_patterns, skip_urls, filter=False, reverse_filter=Fal
         "video": "src"
     }
 
+    # Remove message-signature blocks entirely
+    for sig in soup.select(".message-signature"):
+        sig.decompose()
+
     # 1. Standard tag attributes
     for tag, attr in attrs.items():
         for element in soup.find_all(tag):
