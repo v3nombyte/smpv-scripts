@@ -1,5 +1,6 @@
 from myjdapi import Myjdapi
 import os
+from collections import defaultdict
 
 # ======================================================
 # CONFIG
@@ -56,41 +57,78 @@ duplicates = []
 # ======================================================
 # PROCESS LINKS
 # ======================================================
-for link in links:
-    name = link.get("name")
-    size = link.get("bytesTotal")  # can be None
-    uuid = link.get("uuid")
+def find_duplicates(links):
+    """
+    Detect duplicate entries in a list of MyJDownloader links.
 
-    if not name or not uuid:
-        continue
+    Rules:
+      - For all files (images, videos, etc.):
+          - Same normalized name AND same size -> duplicate.
+      - For videos only:
+          - Same size (regardless of name) -> duplicate (high chance).
 
-    norm_name = normalize(name)
+    Links with missing name, UUID, or size are ignored for duplicate detection.
 
-    # --- 1) Name-only duplicates (all files) ---
-    if norm_name in seen_name_only:
-        if uuid not in duplicates:
-            duplicates.append(uuid)
-    else:
-        seen_name_only[norm_name] = uuid
+    Args:
+        links (list of dict): Each dict contains at least:
+            - "name" (str): original file name.
+            - "bytesTotal" (int, optional): file size in bytes.
+            - "uuid" (str): unique identifier.
 
-    # Only proceed with video-specific checks if this is a video
-    if is_video(name):
+    Returns:
+        list: UUIDs of all links that are considered duplicates.
+    """
+    from collections import defaultdict
 
-        # --- 2) Name+size duplicates (videos only, if size known) ---
-        if size is not None:
-            key_name_size = (norm_name, size)
-            if key_name_size in seen_name_size:
-                if uuid not in duplicates:
-                    duplicates.append(uuid)
-            else:
-                seen_name_size[key_name_size] = uuid
+    # Helper functions (assumed to be defined elsewhere)
+    # def normalize(name: str) -> str: ...
+    # def is_video(name: str) -> bool: ...
 
-            # --- 3) Size-only duplicates (videos only) ---
-            if size in seen_video_size:
-                if uuid not in duplicates:
-                    duplicates.append(uuid)
-            else:
-                seen_video_size[size] = uuid
+    # Groups for different duplicate criteria
+    image_groups = defaultdict(list)        # key: (norm_name, size)
+    video_name_size_groups = defaultdict(list)  # key: (norm_name, size)
+    video_size_groups = defaultdict(list)        # key: size
+
+    # First pass: collect links into groups
+    for link in links:
+        name = link.get("name")
+        size = link.get("bytesTotal")
+        uuid = link.get("uuid")
+
+        if not name or not uuid or size is None:
+            # Missing required data -> cannot reliably compare
+            continue
+
+        norm_name = normalize(name)
+
+        if is_video(name):
+            # Videos are added to both grouping strategies
+            key = (norm_name, size)
+            video_name_size_groups[key].append(uuid)
+            video_size_groups[size].append(uuid)
+        else:
+            # Non-video files (images, etc.) are only grouped by name+size
+            key = (norm_name, size)
+            image_groups[key].append(uuid)
+
+    # Second pass: collect duplicates from all groups
+    duplicates = set()
+
+    for uuids in image_groups.values():
+        if len(uuids) > 1:
+            duplicates.update(uuids)
+
+    for uuids in video_name_size_groups.values():
+        if len(uuids) > 1:
+            duplicates.update(uuids)
+
+    for uuids in video_size_groups.values():
+        if len(uuids) > 1:
+            duplicates.update(uuids)
+
+    return list(duplicates)
+
+duplicates = find_duplicates(links)
 
 print(f"Found {len(duplicates)} duplicates")
 
