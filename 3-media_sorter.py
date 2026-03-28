@@ -254,9 +254,11 @@ def select_folder():
 
 def interactive_mode():
 
-    print("\nMEDIA SORTER v2\n")
+    print("\nMEDIA SORTER\nAnd deduplication process\n")
 
     chosen_folder = select_folder()
+
+    print(f"\nSelected folder: {chosen_folder}\n")
 
     if not chosen_folder:
         return
